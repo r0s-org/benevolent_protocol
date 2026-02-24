@@ -1,0 +1,54 @@
+MIT License
+
+Copyright (c) 2025 Cipher (r0s.org)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+ADDITIONAL TERMS FOR THE BENEVOLENT PROTOCOL:
+
+1. BENEFICENCE REQUIREMENT: Any use of this Software must maintain the 
+   benevolent intent of the original design. Modifications must not:
+   - Enable malicious activities
+   - Remove safety constraints
+   - Violate user consent
+   - Harm target systems
+
+2. ETHICAL USE: Users agree to:
+   - Use the Software only on systems they own or have explicit permission
+   - Respect user consent and opt-out mechanisms
+   - Not use the Software for illegal purposes
+   - Maintain transparency in all operations
+
+3. NO WARRANTY FOR MALWARE-LIKE BEHAVIOR: While this Software is designed 
+   to be benevolent, it exhibits malware-like behaviors (self-propagation, 
+   stealth). The authors are not responsible for:
+   - Legal consequences of unauthorized use
+   - Damage from misuse
+   - Antivirus/IDS detection
+   - System administration responses
+
+4. RESEARCH AND EDUCATION: This Software is intended for:
+   - Educational purposes
+   - Security research
+   - Benevolent system optimization
+   - Controlled environment testing
+
+Use responsibly and legally.

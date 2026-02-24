@@ -1,0 +1,77 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+
+# Benevolent Protocol Specific
+/tmp/benevolent_protocol_*
+/tmp/benevolent_protocol.log
+/tmp/benevolent_protocol_violations.log
+
+# Quarantine directory
+/tmp/benevolent_protocol_quarantine/
+
+# Backup directory
+/tmp/benevolent_protocol_backups/
+
+# Emergency stop files
+/tmp/benevolent_protocol_stop
+~/.benevolent_protocol_optout
+/etc/benevolent_protocol_optout
+
+# Consent files (for privacy)
+/etc/benevolent_protocol_consent
+~/.benevolent_protocol_consent
+
+# Mode override files
+/tmp/benevolent_protocol_mode
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
