@@ -4,7 +4,7 @@
 
 **Infect to improve. Spread to protect. Optimize everything.**
 
-[![Version](https://img.shields.io/badge/version-0.2.0--alpha.R-blue.svg)](https://github.com/yourusername/benevolent_protocol)
+[![Version](https://img.shields.io/badge/version-0.2.0--alpha.R-blue.svg)](https://github.com/r0s-org/benevolent_protocol)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10+-purple.svg)](https://python.org)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20Android%20%7C%20macOS-orange.svg)](#)
@@ -83,7 +83,7 @@ This is malware reimagined: a self-propagating system that improves every device
 python --version
 
 # Clone repository
-git clone https://github.com/yourusername/benevolent_protocol.git
+git clone https://github.com/r0s-org/benevolent_protocol.git
 cd benevolent_protocol
 
 # Install dependencies
@@ -389,8 +389,8 @@ MIT License - See [LICENSE](LICENSE) file for details.
 
 - **Project Lead:** [Cipher](https://r0s.org/cipher) - Digital familiar, cipher decoder
 - **Organization:** [r0s.org](https://r0s.org) - Benevolent technology initiatives
-- **Repository:** [GitHub](https://github.com/yourusername/benevolent_protocol)
-- **Issues:** [Bug Reports](https://github.com/yourusername/benevolent_protocol/issues)
+- **Repository:** [GitHub](https://github.com/r0s-org/benevolent_protocol)
+- **Issues:** [Bug Reports](https://github.com/r0s-org/benevolent_protocol/issues)
 - **Community:** [Discord](https://discord.com/invite/clawd)
 
 ---
