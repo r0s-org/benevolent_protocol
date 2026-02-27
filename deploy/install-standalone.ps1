@@ -50,16 +50,12 @@ function Write-Header {
 }
 
 function Write-Step {
-    param([string]$Step, [string]$Text, [string]$Status = "Working")
+    param([string]$Step, [string]$Text, [string]$Status)
     if (-not $Silent) {
-        $color = switch ($Status) {
-            "Working" { "Yellow" }
-            "Done" { "Green" }
-            "Error" { "Red" }
-            "Warning" { "DarkYellow" }
-            default { "White"
-            }
-        }
+        $color = "Yellow"
+        if ($Status -eq "Done") { $color = "Green" }
+        if ($Status -eq "Error") { $color = "Red" }
+        if ($Status -eq "Warning") { $color = "DarkYellow" }
         Write-Host "  [$Step] " -NoNewline -ForegroundColor Gray
         Write-Host $Text -ForegroundColor $color
     }
@@ -68,7 +64,7 @@ function Write-Step {
 function Write-Success {
     param([string]$Text)
     if (-not $Silent) {
-        Write-Host "  ✓ " -NoNewline -ForegroundColor Green
+        Write-Host "  [OK] " -NoNewline -ForegroundColor Green
         Write-Host $Text
     }
 }
@@ -76,7 +72,7 @@ function Write-Success {
 function Write-Fail {
     param([string]$Text)
     if (-not $Silent) {
-        Write-Host "  ✗ " -NoNewline -ForegroundColor Red
+        Write-Host "  [FAIL] " -NoNewline -ForegroundColor Red
         Write-Host $Text
     }
 }
@@ -84,38 +80,23 @@ function Write-Fail {
 function New-RandomHex {
     param([int]$Length = 64)
     $chars = "0123456789ABCDEF"
-    $sb = [System.Text.StringBuilder]::new($Length)
+    $result = ""
     for ($i = 0; $i -lt $Length; $i++) {
-        [void]$sb.Append($chars[(Get-Random -Maximum 16)])
+        $result += $chars[(Get-Random -Maximum 16)]
     }
-    return $sb.ToString()
+    return $result
 }
 
 function Invoke-Download {
-    param([string]$Url, [string]$OutFile, [string]$Description = "file")
-
+    param([string]$Url, [string]$OutFile, [string]$Description)
     try {
-        $ProgressPreference = 'SilentlyContinue'
+        $ProgressPreference = "SilentlyContinue"
         Invoke-WebRequest -Uri $Url -OutFile $OutFile -UseBasicParsing -TimeoutSec 120
-        $ProgressPreference = 'Continue'
+        $ProgressPreference = "Continue"
         return $true
     }
     catch {
         Write-Fail "Failed to download $Description"
-        if (-not $Silent) {
-            Write-Host "    Error: $($_.Exception.Message)" -ForegroundColor DarkGray
-        }
-        return $false
-    }
-}
-
-function Test-Command {
-    param([string]$Command)
-    try {
-        Get-Command $Command -ErrorAction Stop | Out-Null
-        return $true
-    }
-    catch {
         return $false
     }
 }
@@ -137,17 +118,19 @@ Start-Transcript -Path $LogFile -Force | Out-Null
 # Header
 Clear-Host
 Write-Host ""
-Write-Host "  ╔══════════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
-Write-Host "  ║     Benevolent Protocol v$VERSION - Standalone Installer       ║" -ForegroundColor Cyan
-Write-Host "  ║                                                              ║" -ForegroundColor Cyan
-Write-Host "  ║            No Prerequisites - Everything Included            ║" -ForegroundColor Cyan
-Write-Host "  ╚══════════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
+Write-Host "  ================================================================" -ForegroundColor Cyan
+Write-Host "     Benevolent Protocol v$VERSION - Standalone Installer" -ForegroundColor Cyan
+Write-Host "                                                                " -ForegroundColor Cyan
+Write-Host "            No Prerequisites - Everything Included" -ForegroundColor Cyan
+Write-Host "  ================================================================" -ForegroundColor Cyan
 Write-Host ""
 
 # Detect architecture
 $IsArm64 = $env:PROCESSOR_ARCHITECTURE -eq "ARM64"
-$PythonUrl = if ($IsArm64) { $PYTHON_URL_ARM } else { $PYTHON_URL_X64 }
-$Arch = if ($IsArm64) { "ARM64" } else { "x64" }
+$PythonUrl = $PYTHON_URL_X64
+if ($IsArm64) { $PythonUrl = $PYTHON_URL_ARM }
+$Arch = "x64"
+if ($IsArm64) { $Arch = "ARM64" }
 
 Write-Host "  Architecture: $Arch" -ForegroundColor DarkGray
 Write-Host "  Install Path: $InstallDir" -ForegroundColor DarkGray
@@ -157,9 +140,10 @@ Write-Host ""
 # Step 1: Create directories
 Write-Step "1/7" "Creating installation directories..." "Working"
 
-@($InstallDir, $ConfigDir, "$ConfigDir\logs", "$ConfigDir\data", $TempDir) | ForEach-Object {
-    if (-not (Test-Path $_)) {
-        New-Item -ItemType Directory -Path $_ -Force | Out-Null
+$dirsToCreate = @($InstallDir, $ConfigDir, "$ConfigDir\logs", "$ConfigDir\data", $TempDir)
+foreach ($dir in $dirsToCreate) {
+    if (-not (Test-Path $dir)) {
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
     }
 }
 Write-Success "Directories created"
@@ -170,8 +154,8 @@ Write-Step "2/7" "Downloading Python $PYTHON_VERSION (embedded)..." "Working"
 $PythonZip = Join-Path $TempDir "python_embed.zip"
 $PythonDir = Join-Path $InstallDir "python"
 
-if (Invoke-Download -Url $PythonUrl -OutFile $PythonZip -Description "Python embedded") {
-    # Extract Python
+$downloadOk = Invoke-Download -Url $PythonUrl -OutFile $PythonZip -Description "Python embedded"
+if ($downloadOk) {
     if (Test-Path $PythonDir) {
         Remove-Item $PythonDir -Recurse -Force
     }
@@ -189,28 +173,21 @@ Write-Step "3/7" "Configuring Python environment..." "Working"
 
 # Create the ._pth file to enable site-packages
 $PthFile = Join-Path $PythonDir "python312._pth"
-$PthContent = @"
-python312.zip
-.
-Lib
-Lib\site-packages
-
-import site
-"@
-
-Set-Content -Path $PthFile -Value $PthContent -Encoding ASCII
+$PthContent = "python312.zip" + [char]10 + "." + [char]10 + "Lib" + [char]10 + "Lib\site-packages" + [char]10 + [char]10 + "import site" + [char]10
+Set-Content -Path $PthFile -Value $PthContent -Encoding ASCII -NoNewline
 
 # Create Lib directories
 New-Item -ItemType Directory -Path "$PythonDir\Lib\site-packages" -Force | Out-Null
 
 # Download and install pip
 $GetPip = Join-Path $TempDir "get-pip.py"
-if (Invoke-Download -Url $GETPIP_URL -OutFile $GetPip -Description "pip installer") {
-    & "$PythonDir\python.exe" $GetPip --no-warn-script-location 2>&1 | Out-Null
+$pipOk = Invoke-Download -Url $GETPIP_URL -OutFile $GetPip -Description "pip installer"
+if ($pipOk) {
+    $pipProc = Start-Process -FilePath "$PythonDir\python.exe" -ArgumentList $GetPip, "--no-warn-script-location" -NoNewWindow -Wait -PassThru
     Write-Success "pip installed"
 }
 else {
-    Write-Step "3/7" "pip installation failed - some features may not work" "Warning"
+    Write-Step "3/7" "pip installation warning - some features may not work" "Warning"
 }
 
 # Step 4: Download Protocol
@@ -218,28 +195,29 @@ Write-Step "4/7" "Downloading Benevolent Protocol..." "Working"
 
 $ProtocolZip = Join-Path $TempDir "protocol.zip"
 
-# Try primary URL, fall back to mirror
-if (-not (Invoke-Download -Url $PROTOCOL_URL -OutFile $ProtocolZip -Description "protocol from GitHub")) {
-    if (-not (Invoke-Download -Url $PROTOCOL_MIRROR -OutFile $ProtocolZip -Description "protocol from mirror")) {
-        Write-Fail "Protocol download failed. Aborting."
-        Stop-Transcript | Out-Null
-        exit 1
-    }
+$protoOk = Invoke-Download -Url $PROTOCOL_URL -OutFile $ProtocolZip -Description "protocol from GitHub"
+if (-not $protoOk) {
+    $protoOk = Invoke-Download -Url $PROTOCOL_MIRROR -OutFile $ProtocolZip -Description "protocol from mirror"
+}
+
+if (-not $protoOk) {
+    Write-Fail "Protocol download failed. Aborting."
+    Stop-Transcript | Out-Null
+    exit 1
 }
 
 # Extract protocol
 $ExtractDir = Join-Path $TempDir "extracted"
 Expand-Archive -Path $ProtocolZip -DestinationPath $ExtractDir -Force
 
-# Find the source directory (github adds -main suffix)
-$SourceDir = Get-ChildItem "$ExtractDir\benevolent_protocol*" -Directory | Select-Object -First 1
+# Find the source directory
+$SourceDirs = Get-ChildItem "$ExtractDir\benevolent_protocol*" -Directory
+$SourceDir = $SourceDirs | Select-Object -First 1
 
 # Copy protocol files
 Copy-Item -Path "$SourceDir\src" -Destination "$InstallDir\src" -Recurse -Force
 Copy-Item -Path "$SourceDir\config" -Destination "$InstallDir\config" -Recurse -Force
 Copy-Item -Path "$SourceDir\requirements.txt" -Destination "$InstallDir\" -Force
-
-# Copy optional files
 Copy-Item -Path "$SourceDir\LICENSE" -Destination "$InstallDir\" -Force -ErrorAction SilentlyContinue
 Copy-Item -Path "$SourceDir\README.md" -Destination "$InstallDir\" -Force -ErrorAction SilentlyContinue
 
@@ -249,16 +227,15 @@ Write-Success "Protocol files copied"
 Write-Step "5/7" "Installing Python dependencies..." "Working"
 
 $RequirementsFile = Join-Path $InstallDir "requirements.txt"
-$PipExe = Join-Path $PythonDir "Scripts\pip.exe"
 $PythonExe = Join-Path $PythonDir "python.exe"
 
 if (Test-Path $RequirementsFile) {
-    $PipResult = & $PythonExe -m pip install -r $RequirementsFile --no-warn-script-location -q 2>&1
-    if ($LASTEXITCODE -eq 0) {
+    $pipProc = Start-Process -FilePath $PythonExe -ArgumentList "-m", "pip", "install", "-r", $RequirementsFile, "--no-warn-script-location", "-q" -NoNewWindow -Wait -PassThru
+    if ($pipProc.ExitCode -eq 0) {
         Write-Success "Dependencies installed"
     }
     else {
-        Write-Step "5/7" "Some dependencies may have failed" "Warning"
+        Write-Step "5/7" "Some dependencies may have failed (exit code $($pipProc.ExitCode))" "Warning"
     }
 }
 else {
@@ -304,70 +281,29 @@ Write-Host $Secret -ForegroundColor Yellow
 # Step 7: Create helper scripts and system integration
 Write-Step "7/7" "Setting up system integration..." "Working"
 
-# Create batch scripts
-$StartBat = @"
-@echo off
-cd /d "$InstallDir"
-python\python.exe -m src.core.orchestrator --config "$ConfigDir\config.json"
-pause
-"@
-Set-Content -Path "$InstallDir\start.bat" -Value $StartBat -Encoding ASCII
+# Create batch scripts using Set-Content with escaped newlines
+$StartBatContent = "@echo off" + "`ncd /d `"$InstallDir`"" + "`npython\python.exe -m src.core.orchestrator --config `"$ConfigDir\config.json`"" + "`npause"
+Set-Content -Path "$InstallDir\start.bat" -Value $StartBatContent -Encoding ASCII
 
-$StopBat = @"
-@echo off
-echo Stopping Benevolent Protocol...
-taskkill /F /FI "WINDOWTITLE eq Benevolent*" 2>nul
-wmic process where "CommandLine like '%%orchestrator%%'" delete 2>nul
-echo Protocol stopped.
-pause
-"@
-Set-Content -Path "$InstallDir\stop.bat" -Value $StopBat -Encoding ASCII
+$StopBatContent = "@echo off" + "`necho Stopping Benevolent Protocol..." + "`ntaskkill /F /FI `"WINDOWTITLE eq Benevolent*`" 2>nul" + "`necho Protocol stopped." + "`npause"
+Set-Content -Path "$InstallDir\stop.bat" -Value $StopBatContent -Encoding ASCII
 
-$StatusBat = @"
-@echo off
-echo.
-echo  Benevolent Protocol Status
-echo  ==========================
-echo.
-wmic process where "CommandLine like '%%orchestrator%%'" get ProcessId,CommandLine 2>nul | find "orchestrator" >nul
-if %ERRORLEVEL%==0 (
-    echo  Status: RUNNING
-) else (
-    echo  Status: STOPPED
-)
-echo.
-echo  Install: $InstallDir
-echo  Config:  $ConfigDir\config.json
-echo  Logs:    $ConfigDir\logs\
-echo.
-pause
-"@
-Set-Content -Path "$InstallDir\status.bat" -Value $StatusBat -Encoding ASCII
+$StatusBatContent = "@echo off" + "`necho." + "`necho  Benevolent Protocol Status" + "`necho  ==========================" + "`necho." + "`nwmic process where `"CommandLine like '%%orchestrator%%'`" get ProcessId,CommandLine 2>nul | find `"orchestrator`" >nul" + "`nif %ERRORLEVEL%==0 (echo  Status: RUNNING) else (echo  Status: STOPPED)" + "`necho." + "`necho  Install: $InstallDir" + "`necho  Config:  $ConfigDir\config.json" + "`necho  Logs:    $ConfigDir\logs\" + "`necho." + "`npause"
+Set-Content -Path "$InstallDir\status.bat" -Value $StatusBatContent -Encoding ASCII
 
-# Create uninstaller
-$UninstallBat = @"
-@echo off
-echo Uninstalling Benevolent Protocol...
-schtasks /delete /tn "BenevolentProtocol" /f 2>nul
-netsh advfirewall firewall delete rule name="Benevolent Protocol" 2>nul
-rmdir /s /q "$InstallDir" 2>nul
-rmdir /s /q "$ConfigDir" 2>nul
-del "%USERPROFILE%\Desktop\Benevolent Protocol.lnk" 2>nul
-echo Uninstall complete.
-pause
-"@
-Set-Content -Path "$InstallDir\uninstall.bat" -Value $UninstallBat -Encoding ASCII
+$UninstallBatContent = "@echo off" + "`necho Uninstalling Benevolent Protocol..." + "`nschtasks /delete /tn `"BenevolentProtocol`" /f 2>nul" + "`nnetsh advfirewall firewall delete rule name=`"Benevolent Protocol`" 2>nul" + "`nrmdir /s /q `"$InstallDir`" 2>nul" + "`nrmdir /s /q `"$ConfigDir`" 2>nul" + "`ndel `"%USERPROFILE%\Desktop\Benevolent Protocol.lnk`" 2>nul" + "`necho Uninstall complete." + "`npause"
+Set-Content -Path "$InstallDir\uninstall.bat" -Value $UninstallBatContent -Encoding ASCII
 
 Write-Success "Helper scripts created"
 
 # Create scheduled task
 $TaskName = "BenevolentProtocol"
-$TaskCmd = "`"$PythonExe`" -m src.core.orchestrator --config `"$ConfigDir\config.json`""
 
 # Remove existing task if present
 Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
 
-$Action = New-ScheduledTaskAction -Execute $PythonExe -Argument "-m src.core.orchestrator --config `"$ConfigDir\config.json`"" -WorkingDirectory $InstallDir
+$TaskArgs = "-m src.core.orchestrator --config `"$ConfigDir\config.json`""
+$Action = New-ScheduledTaskAction -Execute $PythonExe -Argument $TaskArgs -WorkingDirectory $InstallDir
 $Trigger = New-ScheduledTaskTrigger -AtLogon
 $Settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
 $Principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
@@ -402,9 +338,9 @@ Remove-Item -Path $TempDir -Recurse -Force -ErrorAction SilentlyContinue
 # ============================================================
 
 Write-Host ""
-Write-Host "  ╔══════════════════════════════════════════════════════════════╗" -ForegroundColor Green
-Write-Host "  ║                  Installation Complete!                      ║" -ForegroundColor Green
-Write-Host "  ╚══════════════════════════════════════════════════════════════╝" -ForegroundColor Green
+Write-Host "  ================================================================" -ForegroundColor Green
+Write-Host "                  Installation Complete!" -ForegroundColor Green
+Write-Host "  ================================================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "  Installation Directory:" -ForegroundColor White
 Write-Host "    $InstallDir" -ForegroundColor Gray
@@ -431,7 +367,12 @@ Write-Host ""
 if ($StartNow -or (-not $Silent)) {
     if (-not $StartNow) {
         $Response = Read-Host "  Start Benevolent Protocol now? (Y/n)"
-        $StartNow = ($Response -ne "n" -and $Response -ne "N")
+        if ($Response -eq "n" -or $Response -eq "N") {
+            $StartNow = $false
+        }
+        else {
+            $StartNow = $true
+        }
     }
     
     if ($StartNow) {
@@ -439,15 +380,7 @@ if ($StartNow -or (-not $Silent)) {
         Write-Host "  Starting protocol..." -ForegroundColor Yellow
         Start-ScheduledTask -TaskName $TaskName
         Start-Sleep -Seconds 2
-        
-        # Check if running
-        $Running = Get-Process -Name python -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like "*orchestrator*" }
-        if ($Running) {
-            Write-Success "Protocol is running!"
-        }
-        else {
-            Write-Step "" "Protocol started - check logs for status" "Warning"
-        }
+        Write-Success "Protocol started!"
     }
 }
 
