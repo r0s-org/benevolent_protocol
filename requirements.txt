@@ -1,6 +1,7 @@
 # Core dependencies
 psutil>=5.9.0
 asyncio>=3.4.3
+aiohttp>=3.9.0
 
 # Security and cryptography
 cryptography>=41.0.0
