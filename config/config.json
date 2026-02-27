@@ -1,0 +1,22 @@
+{
+    "telemetry_enabled": true,
+    "telemetry_level": "standard",
+    "telemetry_endpoint": null,
+    "heartbeat_interval": 60,
+    "command_port": 9527,
+    "optimization_interval": 3600,
+    "propagation_enabled": false,
+    "gaming_mode_auto_detect": true,
+    "max_cpu_percent": 30,
+    "max_memory_mb": 500,
+    "control_secret": "CHANGE_THIS_SECRET_KEY",
+    "update_endpoint": null,
+    "log_level": "INFO",
+    "log_file": "/var/log/benevolent_protocol.log",
+    "platform_mode": "auto",
+    "linux_carrier_mode": true,
+    "windows_active_mode": true,
+    "android_active_mode": true,
+    "allowed_networks": ["192.168.0.0/16", "10.0.0.0/8"],
+    "excluded_hosts": []
+}
