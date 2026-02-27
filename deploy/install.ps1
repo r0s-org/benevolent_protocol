@@ -38,6 +38,17 @@ function Write-WarningMsg {
     }
 }
 
+# Generate hex string (PowerShell 5.1 compatible)
+function New-HexString {
+    param([int]$Length = 64)
+    $chars = "0123456789ABCDEF"
+    $result = ""
+    for ($i = 0; $i -lt $Length; $i++) {
+        $result += $chars[(Get-Random -Maximum 16)]
+    }
+    return $result
+}
+
 # Start logging
 Start-Transcript -Path $LogFile -Force | Out-Null
 
@@ -60,34 +71,83 @@ Write-Status "Checking Python installation..." "Yellow"
 
 $PythonCmd = $null
 $PythonVersion = $null
+$PythonPath = $null
 
-# Try python3 first
+# Check common Python locations
+$PythonPaths = @(
+    "${env:LOCALAPPDATA}\Programs\Python\Python311\python.exe",
+    "${env:LOCALAPPDATA}\Programs\Python\Python310\python.exe",
+    "${env:LOCALAPPDATA}\Programs\Python\Python39\python.exe",
+    "C:\Python311\python.exe",
+    "C:\Python310\python.exe",
+    "C:\Python39\python.exe"
+)
+
+# Try py launcher first (official Python installer includes this)
 try {
-    $PythonVersion = (python3 --version 2>&1) -replace "Python ", ""
-    $PythonCmd = "python3"
+    $pyVersion = py --version 2>&1
+    if ($pyVersion -match "Python (\d+\.\d+)") {
+        $PythonVersion = $Matches[1]
+        $PythonCmd = "py"
+        $PythonPath = (Get-Command py -ErrorAction SilentlyContinue).Source
+    }
 }
-catch {
-    # Try python
+catch {}
+
+# Try python command
+if (-not $PythonCmd) {
     try {
-        $PythonVersion = (python --version 2>&1) -replace "Python ", ""
-        $PythonCmd = "python"
+        $verOutput = python --version 2>&1
+        if ($verOutput -match "Python (\d+\.\d+)") {
+            $PythonVersion = $Matches[1]
+            $PythonCmd = "python"
+            $PythonPath = (Get-Command python -ErrorAction SilentlyContinue).Source
+        }
     }
-    catch {
-        Write-ErrorMsg "Python is not installed or not in PATH."
-        Write-Status ""
-        Write-WarningMsg "Please install Python 3.10+ from:"
-        Write-WarningMsg "  https://www.python.org/downloads/"
-        Write-Status ""
-        Write-WarningMsg "Make sure to check 'Add Python to PATH' during installation."
-        Stop-Transcript | Out-Null
-        exit 1
+    catch {}
+}
+
+# Check known paths
+if (-not $PythonCmd) {
+    foreach ($path in $PythonPaths) {
+        if (Test-Path $path) {
+            try {
+                $verOutput = & $path --version 2>&1
+                if ($verOutput -match "Python (\d+\.\d+)") {
+                    $PythonVersion = $Matches[1]
+                    $PythonCmd = $path
+                    $PythonPath = $path
+                    break
+                }
+            }
+            catch {}
+        }
     }
+}
+
+# Check if we found Python
+if (-not $PythonCmd) {
+    Write-ErrorMsg "Python 3.10+ is not installed."
+    Write-Status ""
+    Write-WarningMsg "Please install Python from:"
+    Write-WarningMsg "  https://www.python.org/downloads/"
+    Write-Status ""
+    Write-WarningMsg "IMPORTANT: Check 'Add Python to PATH' during installation!"
+    Write-Status ""
+    Write-Status "Or install via winget:"
+    Write-Status "  winget install Python.Python.3.12"
+    Write-Status ""
+    Stop-Transcript | Out-Null
+    exit 1
 }
 
 # Check version
 $VersionParts = $PythonVersion.Split(".")
 if ([int]$VersionParts[0] -lt 3 -or ([int]$VersionParts[0] -eq 3 -and [int]$VersionParts[1] -lt 10)) {
     Write-ErrorMsg "Python 3.10+ is required. Found: $PythonVersion"
+    Write-Status ""
+    Write-WarningMsg "Please upgrade Python from:"
+    Write-WarningMsg "  https://www.python.org/downloads/"
     Stop-Transcript | Out-Null
     exit 1
 }
@@ -118,8 +178,10 @@ try {
     if (Test-Path $ZipFile) { Remove-Item $ZipFile -Force }
     if (Test-Path $ExtractDir) { Remove-Item $ExtractDir -Recurse -Force }
 
-    # Download
+    # Download with progress
+    $ProgressPreference = 'SilentlyContinue'
     Invoke-WebRequest -Uri $RELEASE_URL -OutFile $ZipFile -UseBasicParsing
+    $ProgressPreference = 'Continue'
 
     # Extract
     Expand-Archive -Path $ZipFile -DestinationPath $ExtractDir -Force
@@ -154,10 +216,14 @@ $VenvDir = "$InstallDir\venv"
 
 try {
     & $PythonCmd -m venv $VenvDir
+    if (-not (Test-Path "$VenvDir\Scripts\python.exe")) {
+        throw "Virtual environment creation failed"
+    }
     Write-Status "Virtual environment created"
 }
 catch {
     Write-ErrorMsg "Failed to create virtual environment: $_"
+    Write-WarningMsg "Make sure Python was installed with 'pip' option enabled."
     Stop-Transcript | Out-Null
     exit 1
 }
@@ -166,22 +232,27 @@ catch {
 Write-Status ""
 Write-Status "Installing dependencies..." "Yellow"
 
-$PipCmd = "$VenvDir\Scripts\pip.exe"
+$VenvPython = "$VenvDir\Scripts\python.exe"
+$VenvPip = "$VenvDir\Scripts\pip.exe"
 
 try {
-    & $PipCmd install --upgrade pip | Out-Null
-    & $PipCmd install -r "$InstallDir\requirements.txt" 2>&1 | Out-Null
+    & $VenvPython -m pip install --upgrade pip 2>&1 | Out-Null
+    & $VenvPip install -r "$InstallDir\requirements.txt" 2>&1 | ForEach-Object {
+        if ($_ -match "error|ERROR|failed") {
+            Write-WarningMsg $_
+        }
+    }
     Write-Status "Dependencies installed"
 }
 catch {
-    Write-WarningMsg "Some dependencies may have failed to install: $_"
+    Write-WarningMsg "Some dependencies may have failed: $_"
 }
 
-# Generate secure secret
+# Generate secure secret (PowerShell 5.1 compatible)
 Write-Status ""
 Write-Status "Generating secure configuration..." "Yellow"
 
-$Secret = [Convert]::ToHexString((1..64 | ForEach-Object { Get-Random -Maximum 16 }))
+$Secret = New-HexString -Length 64
 
 # Create configuration
 $ConfigFile = "$ConfigDir\config.json"
@@ -291,14 +362,18 @@ Write-Status "Firewall configured (port 9527)"
 Write-Status ""
 Write-Status "Creating shortcuts..." "Yellow"
 
-$WScriptShell = New-Object -ComObject WScript.Shell
-$Shortcut = $WScriptShell.CreateShortcut("$env:USERPROFILE\Desktop\Benevolent Protocol.lnk")
-$Shortcut.TargetPath = "$InstallDir\start.bat"
-$Shortcut.WorkingDirectory = $InstallDir
-$Shortcut.Description = "Start Benevolent Protocol"
-$Shortcut.Save()
-
-Write-Status "Desktop shortcut created"
+try {
+    $WScriptShell = New-Object -ComObject WScript.Shell
+    $Shortcut = $WScriptShell.CreateShortcut("$env:USERPROFILE\Desktop\Benevolent Protocol.lnk")
+    $Shortcut.TargetPath = "$InstallDir\start.bat"
+    $Shortcut.WorkingDirectory = $InstallDir
+    $Shortcut.Description = "Start Benevolent Protocol"
+    $Shortcut.Save()
+    Write-Status "Desktop shortcut created"
+}
+catch {
+    Write-WarningMsg "Could not create desktop shortcut: $_"
+}
 
 # Summary
 Write-Status ""
@@ -323,6 +398,7 @@ if (-not $Silent) {
     $StartNow = Read-Host "Start Benevolent Protocol now? (Y/n)"
     if ($StartNow -ne "n" -and $StartNow -ne "N") {
         Start-ScheduledTask -TaskName $TaskName
+        Start-Sleep -Seconds 2
         Write-Status "Protocol started!" "Green"
     }
 }

