@@ -15,11 +15,11 @@ import json
 # Core imports
 from ..core import ProtocolCore
 from ..analysis.system_profiler import SystemProfiler
-from ..optimization.performance_tuner import PerformanceTuner
+from ..optimization.performance_tuner import PerformanceOptimizer as PerformanceTuner
 from ..safety.behavioral_constraints import BehavioralConstraints, OperationMode
 from ..propagation.network_scanner import NetworkScanner
 from ..propagation.propagation_engine import PropagationEngine
-from ..protection.vulnerability_scanner import VulnerabilityScanner
+from ..protection.vulnerability_scanner import SecurityScanner as VulnerabilityScanner
 from ..protection.security_hardener import SecurityHardener
 from ..protection.malware_scanner import MalwareScanner
 from ..protection.malware_remover import MalwareRemover
