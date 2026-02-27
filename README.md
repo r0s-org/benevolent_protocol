@@ -4,7 +4,7 @@
 
 **Infect to improve. Spread to protect. Optimize everything.**
 
-[![Version](https://img.shields.io/badge/version-0.2.0--alpha.R-blue.svg)](https://github.com/r0s-org/benevolent_protocol)
+[![Version](https://img.shields.io/badge/version-0.3.0--alpha-blue.svg)](https://github.com/r0s-org/benevolent_protocol)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10+-purple.svg)](https://python.org)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20Android%20%7C%20macOS-orange.svg)](#)
@@ -37,6 +37,7 @@ This is malware reimagined: a self-propagating system that improves every device
 - **🕵️ Dynamic Stealth** - Adaptive evasion, environment detection, behavior mimicry
 - **🚀 Self-Propagation** - Network scanning, target prioritization, carrier-based spread
 - **🎮 Gaming Mode** - Invisible during gameplay (5% CPU max)
+- **📡 Remote Control** - Kill switch, commands, telemetry, updates
 
 ### Platform Support
 
@@ -71,6 +72,13 @@ This is malware reimagined: a self-propagating system that improves every device
 - Automated hardening with rollback
 - Malware detection (10 threat types)
 - Safe removal with quarantine
+
+**Control System:**
+- Kill switch (soft/hard/nuclear shutdown levels)
+- Remote command receiver with HMAC auth
+- Privacy-preserving telemetry
+- Heartbeat with dead man's switch
+- Atomic updates with rollback
 
 ---
 
@@ -240,11 +248,17 @@ benevolent_protocol/
 │   │   ├── network_scanner.py
 │   │   ├── stealth_operations.py
 │   │   └── propagation_engine.py
-│   └── protection/              # Security & malware
-│       ├── vulnerability_scanner.py
-│       ├── security_hardener.py
-│       ├── malware_scanner.py
-│       └── malware_remover.py
+│   ├── protection/              # Security & malware
+│   │   ├── vulnerability_scanner.py
+│   │   ├── security_hardener.py
+│   │   ├── malware_scanner.py
+│   │   └── malware_remover.py
+│   └── control/                 # Remote control system
+│       ├── kill_switch.py
+│       ├── command_receiver.py
+│       ├── telemetry_sender.py
+│       ├── heartbeat_manager.py
+│       └── update_receiver.py
 ├── docs/                        # Documentation
 ├── tests/                       # Test suites
 ├── test_*.py                    # Test scripts
@@ -265,6 +279,7 @@ python test_propagation.py      # Network scanning
 python test_android.py          # Android optimization
 python test_security.py         # Security hardening
 python test_malware.py          # Malware scanning
+python test_control.py          # Remote control system
 ```
 
 ### Expected Results
@@ -334,7 +349,15 @@ All contributions must:
 - Malware scanner
 - Malware remover
 
-### 🔄 Phase 5: Deployment (In Progress)
+### ✅ Phase 5: Control (Complete)
+- Kill switch system
+- Command receiver
+- Telemetry sender
+- Heartbeat manager
+- Update receiver
+
+### 🔄 Phase 6: Integration (In Progress)
+- Full integration testing
 - Real-world testing
 - Community feedback
 - Documentation refinement
@@ -345,15 +368,15 @@ All contributions must:
 ## 📊 Statistics
 
 **Code Metrics:**
-- Total Lines of Code: ~322,000
-- Documentation: ~67,000 lines
-- Test Scripts: 7 suites
+- Total Lines of Code: ~130,000
+- Documentation: ~45,000 lines
+- Test Scripts: 8 suites
 - Platforms: 4
 - Threat Types: 10
 - Vulnerability Checks: 16
 - Bloatware Apps: 75+
 
-**Module Completion:** 100% (16/16 components)
+**Module Completion:** 100% (19/19 components)
 
 ---
 
