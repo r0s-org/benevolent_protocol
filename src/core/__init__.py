@@ -175,6 +175,10 @@ class BenevolentProtocol:
         }
 
 
+# Convenience alias
+ProtocolCore = BenevolentProtocol
+
+
 # Example usage
 async def main():
     """Example main entry point"""
