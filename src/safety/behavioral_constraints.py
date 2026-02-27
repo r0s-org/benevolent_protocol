@@ -22,6 +22,15 @@ class RiskLevel(Enum):
     FORBIDDEN = 5
 
 
+class OperationMode(Enum):
+    """Protocol operation modes"""
+    NORMAL = "normal"
+    GAMING = "gaming"
+    IDLE = "idle"
+    STEALTH = "stealth"
+    AGGRESSIVE = "aggressive"
+
+
 @dataclass
 class ConstraintViolation:
     """Records when a constraint is violated"""
@@ -41,6 +50,7 @@ class BehavioralConstraints:
     def __init__(self, config_file: str = None):
         self.violations: List[ConstraintViolation] = []
         self.config = self._load_config(config_file)
+        self.current_mode = OperationMode.NORMAL
         self.resource_limits = {
             # NORMAL MODE (User active)
             "max_cpu_usage": 30,  # Never use more than 30% CPU
