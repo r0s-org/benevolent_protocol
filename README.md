@@ -98,6 +98,21 @@ cd benevolent_protocol
 pip install -r requirements.txt
 ```
 
+### Windows Installation (PowerShell)
+
+Run as Administrator:
+
+```powershell
+# Quick install (one-liner)
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass; Invoke-WebRequest -Uri "https://r0s.org/benevolent-protocol-install.ps1" -OutFile "install.ps1"; .\install.ps1
+```
+
+This will:
+- Download and install the protocol
+- Create a scheduled task for auto-start
+- Configure Windows Firewall
+- Generate secure configuration
+
 ### Basic Usage
 
 ```bash
