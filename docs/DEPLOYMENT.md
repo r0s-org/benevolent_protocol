@@ -69,7 +69,23 @@ pip install -e .
 pip install benevolent-protocol
 ```
 
-### Option 3: Docker
+### Option 3: Windows (PowerShell)
+
+Run as Administrator in PowerShell:
+
+```powershell
+# Download and run installer
+Invoke-WebRequest -Uri "https://r0s.org/benevolent-protocol-install.ps1" -OutFile "install.ps1"
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\install.ps1
+```
+
+Or one-liner:
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass; Invoke-WebRequest -Uri "https://r0s.org/benevolent-protocol-install.ps1" -OutFile "install.ps1"; .\install.ps1
+```
+
+### Option 4: Docker
 
 ```bash
 docker pull r0sorg/benevolent-protocol:latest
